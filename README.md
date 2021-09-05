@@ -104,4 +104,4 @@ Some caveats:
 
 ## Notes
 
-Script has only been tested with Python 3.4 on Ubuntu.
+Script has been tested with Python 3.4 on Ubuntu and with Python 3.8 on Windows 10.
