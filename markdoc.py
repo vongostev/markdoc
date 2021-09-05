@@ -55,6 +55,7 @@ MD_TABLE_ALT = '''
 MD_TABLE_ROW_ALT = '| {0} | {1} | \n'
 
 MD_CODE = '``` python \n {0} \n```\n\n'
+MATH_IMG_PREFIX = '<img src="https://render.githubusercontent.com/render/math?math='
 
 
 class MarkDoc(object):
@@ -162,7 +163,7 @@ class MarkDoc(object):
         """Find `class Bla(object):` or `def method(params):` across lines."""
         declaration, found_start = '', False
         # skip lines until class/def, end if :
-        while ':' not in declaration:
+        while ':' not in declaration and len(lines) > 0:
             if lines[0].startswith(' class ') or \
                lines[0].startswith('    def '):
                 found_start = True
@@ -284,7 +285,11 @@ class MarkDoc(object):
         for row in doc:
             if ':' in row and line_buffer:  # if we hit the next, store table
                 line_buffer += (''.join(lines), )
-                table += MD_TABLE_ROW.format(*line_buffer)
+                try:
+                    table += MD_TABLE_ROW.format(*line_buffer)
+                except IndexError:
+                    print('Formatting of MD_TABLE_ROW is failed.' +
+                          f' Line {line_buffer}.\nCheck your code.')
                 line_buffer = ()
                 lines = []
             if ':' in row and not line_buffer:  # it's var : type
@@ -296,9 +301,46 @@ class MarkDoc(object):
 
         if line_buffer:  # empty the buffer
             line_buffer += (''.join(lines), )
-            table += MD_TABLE_ROW.format(*line_buffer)
+            try:
+                table += MD_TABLE_ROW.format(*line_buffer)
+            except IndexError:
+                print('Formatting of MD_TABLE_ROW is failed.' +
+                      f' Line {line_buffer}.\nCheck your code.')
 
         return table
+
+    def md_render_math(self, mark_doc):
+        """Render math expressions in the markdown documentation.
+
+        Math expressions render as images using render.githubusercontent.com.
+        The method allows to render both inlined and outlined expressions in
+        all sections of a docstring.
+
+        Parameters
+        ----------
+        mark_doc : str
+            The Markdown documentation text.
+
+        Returns
+        -------
+        mark_doc : str
+            The Markdown documentation text with rendered expressions.
+
+        """
+        lines = mark_doc.split('\n')
+        for i, line in enumerate(lines):
+            line = r'%s' % line
+            if '.. math::' in line:
+                # If we found math::, encapsulate the line as outlined formula
+                formula = line.replace('.. math::', MATH_IMG_PREFIX).rstrip()
+                lines[i] = '\n{0}">\n'.format(formula)
+            if ':math:' in line:
+                # If we found :math:, encapsulate expression in ``
+                # as inlined formula
+                lines[i] = line.replace(
+                    r':math:`', MATH_IMG_PREFIX).replace('`', '">')
+
+        return '\n'.join(lines)
 
     def md_code_text(self, doc, name, flat=False):
         """Section text and/or code in the example part of the doc.
@@ -355,7 +397,7 @@ class MarkDoc(object):
                                       in ('!', '?', '.', ':')]) else '')
 
         if text:  # empty the buffer
-            order.append(text.replace('\\', ''))
+            order.append(text)
         if code:
             order.append(MD_CODE.format(code))
 
@@ -427,6 +469,8 @@ class MarkDoc(object):
         method_table = MD_TABLE_ALT.format('method')
 
         for method in method_doc:
+            if len(method['name']) == 0:
+                continue
             # isolate only the name of the function (without def and params)
             name = method['name'].replace('(', ' (').split()[1]
             title = self.md_title('\n'.join(method['title']), class_line=True)
@@ -447,7 +491,7 @@ class MarkDoc(object):
             mark_doc += self.md_table(method.get('Returns'), 'Returns')
             mark_doc += self.md_code_text(method.get('Notes'), '## Notes')
 
-        return mark_head.format(method_table, mark_doc)
+        return mark_head.format(method_table, self.md_render_math(mark_doc))
 
     def md_class_doc(self, class_doc):
         """Merge all class section elements in one string.
@@ -491,6 +535,7 @@ class MarkDoc(object):
                                       flat=True)
 
         return mark_doc
+
 
 if __name__ == '__main__':
     try:
