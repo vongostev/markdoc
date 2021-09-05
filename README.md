@@ -8,6 +8,8 @@ documentation needs to be editted, and your documentation on for example
 [readthedocs](http://www.readthedocs.org/) can be automatically updated
 thereafter with some configuration.
 
+**Now markdoc allows to render math expressions in docstrings to display them on github.**
+
 ## Example
 
 The converted documentation for this particular code can be found
