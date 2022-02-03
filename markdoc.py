@@ -54,7 +54,7 @@ MD_TABLE_ALT = '''
 '''
 MD_TABLE_ROW_ALT = '| {0} | {1} | \n'
 
-MD_CODE = '``` python \n {0} \n```\n\n'
+MD_CODE = '```python\n{0}\n```\n\n'
 MATH_IMG_PREFIX = '<img src="https://render.githubusercontent.com/render/math?math='
 
 
@@ -390,7 +390,7 @@ class MarkDoc(object):
             else:
                 if code:
                     # if we found code, encapsulate in ``` python ``` blocks.
-                    order.append(MD_CODE.format(code))
+                    order.append(MD_CODE.format(code[:-1]))
                     code = ''
                 row = row.replace('  ', '')
                 text += row + '\n' + ('\n' if any([row.endswith(x) for x
@@ -399,7 +399,7 @@ class MarkDoc(object):
         if text:  # empty the buffer
             order.append(text)
         if code:
-            order.append(MD_CODE.format(code))
+            order.append(MD_CODE.format(code[:-1]))
 
         return head.format('\n'.join(order).replace('.\n', '.\n\n'), name)
 
